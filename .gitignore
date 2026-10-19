@@ -1,0 +1,17 @@
+# Secrets and machine-specific settings
+.env
+nginx/sites/*.htpasswd
+
+# Runtime data and logs
+db/
+logs/
+
+# Your code lives here but belongs to its own repos
+projects/*
+!projects/.gitkeep
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store

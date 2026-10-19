@@ -1,0 +1,23 @@
+# {{NAME}}.local -> projects/{{PATH}} on {{PHP}} (made by bin/new-site.sh)
+server {
+    listen 80;
+    server_name {{NAME}}.local;
+    root /var/www/projects/{{ROOT}};
+    index index.php index.html;
+
+    # Resolve the PHP container per request, so nginx still starts while {{PHP}} is stopped
+    # (requests get a 502 until it is up, instead of nginx refusing to start).
+    resolver 127.0.0.11 valid=10s;
+    set $php_upstream {{PHP}}:9000;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include /etc/nginx/fastcgi_params;
+        fastcgi_pass $php_upstream;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_index index.php;
+    }
+}

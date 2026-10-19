@@ -1,0 +1,111 @@
+# Personal dev webstack: nginx + PHP-FPM + redis + mailpit.
+# MySQL is NOT in here: it runs as its own container (mysql-local) on the same network, so
+# `docker compose down/up` never touches the database. bin/setup.sh creates it if missing.
+name: webstack
+
+x-php: &php
+  restart: unless-stopped
+  networks: [webstack]
+  environment:
+    TZ: ${TIMEZONE:-Asia/Kuala_Lumpur}
+    # Off by default: Xdebug in develop mode makes every request and test ~7x slower.
+    # Set XDEBUG_MODE=debug in .env and recreate the container when you need it.
+    XDEBUG_MODE: ${XDEBUG_MODE:-off}
+  healthcheck:
+    test: ["CMD", "php", "-v"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+    start_period: 30s
+
+services:
+  nginx:
+    image: nginx:1.31.2
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/fastcgi_params:/etc/nginx/fastcgi_params:ro
+      - ./nginx/mime.types:/etc/nginx/mime.types:ro
+      - ./nginx/sites:/etc/nginx/conf.d:ro
+      - ${PROJECTS_DIR:-./projects}:/var/www/projects:ro
+      - ./logs/nginx:/var/log/nginx
+    environment:
+      TZ: ${TIMEZONE:-Asia/Kuala_Lumpur}
+    depends_on:
+      php83:
+        condition: service_healthy
+    networks: [webstack]
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost/nginx-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  php83:
+    <<: *php
+    build:
+      context: ./php
+      args:
+        PHP_VERSION: "8.3"
+        XDEBUG_VERSION: "3.3.2"
+        REDIS_VERSION: "6.0.2"
+    image: webstack-php:8.3
+    container_name: php83
+    volumes:
+      - ./php/php.ini:/usr/local/etc/php/conf.d/00-webstack.ini:ro
+      - ./php/fpm.d:/usr/local/etc/php-fpm.d:ro
+      - ${PROJECTS_DIR:-./projects}:/var/www/projects
+      - ./logs/php83:/var/log/php
+
+  # Starts only when "php84" is in COMPOSE_PROFILES (bin/new-site.sh adds it for a php84 site).
+  php84:
+    <<: *php
+    profiles: [php84]
+    build:
+      context: ./php
+      args:
+        PHP_VERSION: "8.4"
+        XDEBUG_VERSION: "3.4.0"
+        REDIS_VERSION: "6.2.0"
+    image: webstack-php:8.4
+    container_name: php84
+    volumes:
+      - ./php/php.ini:/usr/local/etc/php/conf.d/00-webstack.ini:ro
+      - ./php/fpm.d:/usr/local/etc/php-fpm.d:ro
+      - ${PROJECTS_DIR:-./projects}:/var/www/projects
+      - ./logs/php84:/var/log/php
+
+  redis:
+    image: redis:8.8.0-alpine
+    container_name: redis
+    restart: unless-stopped
+    # The password comes from .env, never from a committed config file.
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf", "--requirepass", "${REDIS_PASSWORD:-}"]
+    ports:
+      - "127.0.0.1:6380:6379"
+    volumes:
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - ./db/redis:/data
+    environment:
+      TZ: ${TIMEZONE:-Asia/Kuala_Lumpur}
+    networks: [webstack]
+
+  mailpit:
+    image: axllent/mailpit:v1.30.3
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks: [webstack]
+
+# Created once by bin/setup.sh and marked external, so `docker compose down` never deletes it.
+# Deleting it is what used to detach mysql-local and make every page wait ~20s on DNS.
+networks:
+  webstack:
+    name: webstack-network
+    external: true
