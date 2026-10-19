@@ -37,10 +37,10 @@ page hang ~20 s on DNS.
    `mysql-local` (if missing), builds the PHP images, starts everything and prints the hosts-file
    lines you still need to add.
 
-2. Clone each project into `projects/` (e.g. `projects/me/todolist`) and add its site:
+2. Clone each project into `projects/` (e.g. `projects/acme/myapp`) and add its site:
 
-       bin/new-site.sh todolist me/todolist          # php83
-       bin/new-site.sh todolist me/todolist php84    # or on PHP 8.4
+       bin/new-site.sh myapp acme/myapp          # php83
+       bin/new-site.sh myapp acme/myapp php84    # or on PHP 8.4
 
 3. Add the printed `127.0.0.1 <name>.local` lines to `C:\Windows\System32\drivers\etc\hosts`
    (Notepad as Administrator).

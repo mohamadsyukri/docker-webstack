@@ -3,8 +3,8 @@
 # Shares your host npm cache (~/.npm) and runs as you, so files it writes stay yours.
 #
 # Usage: bin/node.sh <path-under-projects> <command...>
-#   bin/node.sh me/todolist npm ci
-#   bin/node.sh me/todolist npm run build
+#   bin/node.sh acme/myapp npm ci
+#   bin/node.sh acme/myapp npm run build
 #
 # For `npm run dev`, use host Node for now: Vite writes its hot-reload URL for the machine it
 # runs on, and that address isn't reachable from the browser when Vite runs in here.

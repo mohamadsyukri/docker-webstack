@@ -3,7 +3,7 @@
 # Uses <path>/public as the web root when it exists (Laravel), otherwise <path> itself.
 #
 # Usage: bin/new-site.sh <name> <path-under-projects> [php83|php84]
-#   bin/new-site.sh todolist me/todolist
+#   bin/new-site.sh myapp acme/myapp
 
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
